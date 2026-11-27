@@ -13,11 +13,27 @@ class EnsureRole
         $authUser = $request->session()->get('auth_user');
 
         if (! is_array($authUser) || empty($authUser['role'])) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Silakan login terlebih dahulu.'], 401);
+            }
+
             return redirect()->route('login');
         }
 
         if (! in_array($authUser['role'], $roles, true)) {
-            abort(403, 'Akses ditolak. Halaman atau aksi ini hanya dapat diakses oleh Petugas / Asisten Lab.');
+            $roleLabels = array_map(static fn (string $r): string => match ($r) {
+                'mahasiswa' => 'Peminjam (Mahasiswa)',
+                'petugas' => 'Petugas / Asisten Lab',
+                default => ucfirst($r),
+            }, $roles);
+
+            $message = 'Akses ditolak. Halaman atau aksi ini hanya dapat diakses oleh ' . implode(' atau ', $roleLabels) . '.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $message], 403);
+            }
+
+            abort(403, $message);
         }
 
         return $next($request);

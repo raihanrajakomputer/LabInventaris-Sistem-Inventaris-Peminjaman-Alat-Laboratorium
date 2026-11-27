@@ -16,17 +16,18 @@ class AlatController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('search', ''));
+        $escapedSearch = addcslashes($search, '\\%_');
         $kondisi = (string) $request->input('kondisi', '');
         $namaLab = (string) $request->input('lab', '');
 
         // Menggunakan View SQL v_daftar_alat untuk menampilkan tabel daftar alat
         $alat = DaftarAlatView::query()
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('kode_alat', 'like', "%{$search}%")
-                        ->orWhere('nama_alat', 'like', "%{$search}%")
-                        ->orWhere('nama_lab', 'like', "%{$search}%")
-                        ->orWhere('lokasi', 'like', "%{$search}%");
+            ->when($search !== '', function ($query) use ($escapedSearch) {
+                $query->where(function ($q) use ($escapedSearch) {
+                    $q->where('kode_alat', 'like', "%{$escapedSearch}%")
+                        ->orWhere('nama_alat', 'like', "%{$escapedSearch}%")
+                        ->orWhere('nama_lab', 'like', "%{$escapedSearch}%")
+                        ->orWhere('lokasi', 'like', "%{$escapedSearch}%");
                 });
             })
             ->when($kondisi !== '', fn ($q) => $q->where('kondisi_umum', $kondisi))

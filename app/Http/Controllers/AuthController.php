@@ -58,12 +58,16 @@ class AuthController extends Controller
             }
 
             $request->session()->regenerate();
+            $request->session()->forget('id_petugas');
+            $request->session()->put('id_peminjam', (int) $peminjam->id_peminjam);
             $request->session()->put('auth_user', [
                 'role' => 'mahasiswa',
                 'role_label' => 'Peminjam (Mahasiswa)',
                 'id' => (int) $peminjam->id_peminjam,
                 'identifier' => $peminjam->nim_nip,
                 'name' => $peminjam->nama_peminjam,
+                'foto_profil' => $peminjam->foto_profil,
+                'email' => $peminjam->email,
             ]);
 
             return redirect()
@@ -81,6 +85,8 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+        $request->session()->forget('id_peminjam');
+        $request->session()->put('id_petugas', (int) $petugas->id_petugas);
         $request->session()->put('auth_user', [
             'role' => 'petugas',
             'role_label' => 'Petugas / Asisten Lab',
@@ -96,7 +102,7 @@ class AuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
-        $request->session()->forget('auth_user');
+        $request->session()->forget(['auth_user', 'id_petugas', 'id_peminjam']);
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

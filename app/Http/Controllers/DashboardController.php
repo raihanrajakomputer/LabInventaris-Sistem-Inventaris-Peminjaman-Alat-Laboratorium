@@ -21,15 +21,26 @@ class DashboardController extends Controller
             $idPeminjam = (int) $authUser['id'];
             $nim = (string) $authUser['identifier'];
 
-            $totalPeminjamanSaya = Peminjaman::where('id_peminjam', $idPeminjam)->count();
+            $totalMenunggu = Peminjaman::where('id_peminjam', $idPeminjam)
+                ->where('status_peminjaman', 'Menunggu')
+                ->count();
             $totalPeminjamanAktif = Peminjaman::where('id_peminjam', $idPeminjam)
                 ->whereIn('status_peminjaman', ['Dipinjam', 'Terlambat'])
                 ->count();
             $totalTerlambat = Peminjaman::where('id_peminjam', $idPeminjam)
-                ->where('status_peminjaman', 'Terlambat')
+                ->where(function ($q) {
+                    $q->where('status_peminjaman', 'Terlambat')
+                        ->orWhere(function ($sub) {
+                            $sub->where('status_peminjaman', 'Dipinjam')
+                                ->where('jadwal_kembali', '<', now());
+                        });
+                })
                 ->count();
             $totalDikembalikan = Peminjaman::where('id_peminjam', $idPeminjam)
                 ->where('status_peminjaman', 'Dikembalikan')
+                ->count();
+            $totalDitolak = Peminjaman::where('id_peminjam', $idPeminjam)
+                ->where('status_peminjaman', 'Ditolak')
                 ->count();
             $totalAlatTersedia = DaftarAlatView::where('stok_tersedia', '>', 0)->count();
 
@@ -44,10 +55,11 @@ class DashboardController extends Controller
             return view('dashboard', compact(
                 'isMahasiswa',
                 'authUser',
-                'totalPeminjamanSaya',
+                'totalMenunggu',
                 'totalPeminjamanAktif',
                 'totalTerlambat',
                 'totalDikembalikan',
+                'totalDitolak',
                 'totalAlatTersedia',
                 'peminjamanTerbaru'
             ));
@@ -56,13 +68,21 @@ class DashboardController extends Controller
         // Dashboard keseluruhan untuk Role Petugas / Asisten Lab
         $totalJenisAlat = DaftarAlatView::count();
         $totalStokTersedia = (int) DaftarAlatView::sum('stok_tersedia');
+        $totalMenunggu = Peminjaman::where('status_peminjaman', 'Menunggu')->count();
         $totalPeminjamanAktif = Peminjaman::whereIn('status_peminjaman', ['Dipinjam', 'Terlambat'])->count();
-        $totalTerlambat = Peminjaman::where('status_peminjaman', 'Terlambat')->count();
+        $totalTerlambat = Peminjaman::where(function ($q) {
+            $q->where('status_peminjaman', 'Terlambat')
+                ->orWhere(function ($sub) {
+                    $sub->where('status_peminjaman', 'Dipinjam')
+                        ->where('jadwal_kembali', '<', now());
+                });
+        })->count();
         $totalDikembalikan = Peminjaman::where('status_peminjaman', 'Dikembalikan')->count();
         $totalLab = Laboratorium::count();
         $totalPeminjam = Peminjam::count();
 
         $peminjamanTerbaru = LaporanPeminjamanView::query()
+            ->orderByRaw("CASE WHEN status_peminjaman = 'Menunggu' THEN 0 ELSE 1 END")
             ->orderByDesc('tanggal_pinjam')
             ->orderByDesc('id_peminjaman')
             ->limit(10)
@@ -83,6 +103,7 @@ class DashboardController extends Controller
             'authUser',
             'totalJenisAlat',
             'totalStokTersedia',
+            'totalMenunggu',
             'totalPeminjamanAktif',
             'totalTerlambat',
             'totalDikembalikan',

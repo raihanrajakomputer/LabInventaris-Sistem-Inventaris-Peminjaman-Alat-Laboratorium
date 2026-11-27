@@ -27,10 +27,19 @@
                 </div>
             </div>
 
-            <div>
-                <label for="nama_peminjam" class="block text-sm font-semibold text-slate-700 mb-1.5">Nama Lengkap <span class="text-rose-500">*</span></label>
-                <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam', $peminjam->nama_peminjam) }}" required maxlength="100"
-                       class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="nama_peminjam" class="block text-sm font-semibold text-slate-700 mb-1.5">Nama Lengkap <span class="text-rose-500">*</span></label>
+                    <input type="text" id="nama_peminjam" name="nama_peminjam" value="{{ old('nama_peminjam', $peminjam->nama_peminjam) }}" required maxlength="100"
+                           class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-semibold text-slate-700 mb-1.5">Email <span class="text-xs font-normal text-slate-400">(opsional)</span></label>
+                    <input type="email" id="email" name="email" value="{{ old('email', $peminjam->email) }}" maxlength="100"
+                           placeholder="contoh@mahasiswa.ac.id"
+                           class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

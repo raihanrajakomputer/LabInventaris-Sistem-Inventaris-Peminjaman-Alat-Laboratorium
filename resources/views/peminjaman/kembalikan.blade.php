@@ -36,11 +36,20 @@
             <strong>Info Trigger Database:</strong> Saat tombol konfirmasi ditekan, status transaksi akan berubah menjadi <code>Dikembalikan</code> dan stok setiap alat di bawah ini akan <strong>otomatis bertambah kembali</strong> oleh Trigger MySQL (<code>trg_kembalikan_stok_alat</code>).
         </div>
 
+        @php
+            $defaultReturnTime = now();
+            if ($peminjaman->tanggal_pinjam && $defaultReturnTime->lt($peminjaman->tanggal_pinjam)) {
+                $defaultReturnTime = $peminjaman->tanggal_pinjam->copy();
+            }
+        @endphp
+
         <div class="max-w-sm">
             <label for="tanggal_kembali_aktual" class="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal &amp; Jam Kembali Aktual <span class="text-rose-500">*</span></label>
             <input type="datetime-local" id="tanggal_kembali_aktual" name="tanggal_kembali_aktual"
-                   value="{{ old('tanggal_kembali_aktual', now()->format('Y-m-d\TH:i')) }}" required
+                   value="{{ old('tanggal_kembali_aktual', $defaultReturnTime->format('Y-m-d\TH:i')) }}"
+                   min="{{ $peminjaman->tanggal_pinjam?->format('Y-m-d\TH:i') }}" required
                    class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none">
+            <p class="mt-1 text-[11px] text-slate-400">Tidak boleh lebih awal dari tanggal pinjam ({{ $peminjaman->tanggal_pinjam?->format('d M Y, H:i') }}).</p>
         </div>
 
         <div>

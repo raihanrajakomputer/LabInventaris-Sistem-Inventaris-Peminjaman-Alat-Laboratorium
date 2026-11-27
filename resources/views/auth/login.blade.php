@@ -96,7 +96,13 @@
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="password" class="block text-sm font-semibold text-slate-700">Password</label>
+                        <a href="{{ route('password.request') }}" id="forgot-password-link"
+                           class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition">
+                            Lupa Password?
+                        </a>
+                    </div>
                     <div class="relative">
                         <input type="password" id="password" name="password" required
                                placeholder="Masukkan password"
@@ -155,13 +161,16 @@
 
         const tabMhs = document.getElementById('tab-mahasiswa');
         const tabPtg = document.getElementById('tab-petugas');
+        const forgotLink = document.getElementById('forgot-password-link');
 
         if (role === 'mahasiswa') {
             tabMhs.className = 'role-tab rounded-2xl py-2.5 px-3 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-white text-indigo-700 shadow-sm';
             tabPtg.className = 'role-tab rounded-2xl py-2.5 px-3 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700';
+            if (forgotLink) forgotLink.classList.remove('hidden');
         } else {
             tabPtg.className = 'role-tab rounded-2xl py-2.5 px-3 text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-white text-slate-900 shadow-sm';
             tabMhs.className = 'role-tab rounded-2xl py-2.5 px-3 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 text-slate-500 hover:text-slate-700';
+            if (forgotLink) forgotLink.classList.add('hidden');
         }
     }
 

@@ -15,12 +15,15 @@ class PetugasController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('search', ''));
+        $escapedSearch = addcslashes($search, '\\%_');
 
         $petugas = Petugas::query()
             ->withCount('peminjaman')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where('username', 'like', "%{$search}%")
-                    ->orWhere('nama_petugas', 'like', "%{$search}%");
+            ->when($search !== '', function ($query) use ($escapedSearch) {
+                $query->where(function ($q) use ($escapedSearch) {
+                    $q->where('username', 'like', "%{$escapedSearch}%")
+                        ->orWhere('nama_petugas', 'like', "%{$escapedSearch}%");
+                });
             })
             ->orderBy('nama_petugas')
             ->paginate(10)
@@ -88,13 +91,27 @@ class PetugasController extends Controller
 
         $petugas->update($data);
 
+        // Sinkronkan session jika petugas mengubah akunnya sendiri
+        $authUser = $request->session()->get('auth_user', []);
+        if (($authUser['role'] ?? null) === 'petugas' && (int) ($authUser['id'] ?? 0) === (int) $petugas->id_petugas) {
+            $authUser['identifier'] = $petugas->username;
+            $authUser['name'] = $petugas->nama_petugas;
+            $request->session()->put('auth_user', $authUser);
+        }
+
         return redirect()
             ->route('petugas.index')
             ->with('success', 'Data petugas berhasil diperbarui.');
     }
 
-    public function destroy(Petugas $petugas): RedirectResponse
+    public function destroy(Request $request, Petugas $petugas): RedirectResponse
     {
+        if ((int) $petugas->id_petugas === (int) $request->session()->get('auth_user.id')) {
+            return redirect()
+                ->route('petugas.index')
+                ->with('error', 'Anda tidak dapat menghapus akun petugas yang sedang digunakan untuk login.');
+        }
+
         if ($petugas->peminjaman()->exists()) {
             return redirect()
                 ->route('petugas.index')

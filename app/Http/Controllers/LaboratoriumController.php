@@ -13,13 +13,16 @@ class LaboratoriumController extends Controller
     public function index(Request $request): View
     {
         $search = trim((string) $request->input('search', ''));
+        $escapedSearch = addcslashes($search, '\\%_');
 
         $laboratorium = Laboratorium::query()
             ->withCount('alat')
             ->withSum('alat', 'stok_tersedia')
-            ->when($search !== '', function ($query) use ($search) {
-                $query->where('nama_lab', 'like', "%{$search}%")
-                    ->orWhere('lokasi', 'like', "%{$search}%");
+            ->when($search !== '', function ($query) use ($escapedSearch) {
+                $query->where(function ($q) use ($escapedSearch) {
+                    $q->where('nama_lab', 'like', "%{$escapedSearch}%")
+                        ->orWhere('lokasi', 'like', "%{$escapedSearch}%");
+                });
             })
             ->orderBy('nama_lab')
             ->paginate(10)

@@ -1,15 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'Buat Peminjaman Baru')
-@section('header', 'Transaksi Peminjaman Baru')
-@section('subheader', $isMahasiswa ? 'Ajukan peminjaman alat laboratorium dengan memilih petugas, jadwal kembali, dan alat yang dibutuhkan' : 'Pilih peminjam, petugas, jadwal kembali, serta satu atau lebih alat laboratorium')
+@section('title', $isMahasiswa ? 'Ajukan Peminjaman Baru' : 'Buat Peminjaman Baru')
+@section('header', $isMahasiswa ? 'Ajukan Peminjaman Baru' : 'Transaksi Peminjaman Baru')
+@section('subheader', $isMahasiswa ? 'Pengajuan Anda akan berstatus Menunggu hingga diverifikasi (ACC) oleh Petugas / Asisten Lab' : 'Transaksi yang dibuat langsung oleh Petugas otomatis berstatus Dipinjam')
 
 @section('content')
 @php
-    $missingPrereq = $peminjamList->isEmpty() || $petugasList->isEmpty() || $alatList->isEmpty();
-    $oldItems = old('items', [
-        ['id_alat' => '', 'jumlah_pinjam' => 1, 'kondisi_saat_pinjam' => 'Baik'],
-    ]);
+    $missingPrereq = $isMahasiswa
+        ? ($peminjamList->isEmpty() || $alatList->isEmpty())
+        : ($peminjamList->isEmpty() || $petugasList->isEmpty() || $alatList->isEmpty());
+    $rawOldItems = old('items');
+    $oldItems = is_array($rawOldItems) && count($rawOldItems) > 0
+        ? array_values($rawOldItems)
+        : [
+            ['id_alat' => '', 'jumlah_pinjam' => 1, 'kondisi_saat_pinjam' => 'Baik'],
+        ];
     $alatMeta = $alatList->mapWithKeys(fn ($a) => [
         $a->id_alat => [
             'kode' => $a->kode_alat,
@@ -29,7 +34,7 @@
             @if ($peminjamList->isEmpty())
                 <li>Data Peminjam masih kosong.</li>
             @endif
-            @if ($petugasList->isEmpty())
+            @if (! $isMahasiswa && $petugasList->isEmpty())
                 <li>Data Petugas masih kosong.</li>
             @endif
             @if ($alatList->isEmpty())
@@ -47,7 +52,7 @@
         <div class="border-b border-slate-100 pb-3">
             <h2 class="text-base font-bold text-slate-900">1. Informasi Peminjaman</h2>
             <p class="text-xs text-slate-500">
-                {{ $isMahasiswa ? 'Identitas peminjam otomatis terkunci ke akun Anda. Pilih petugas yang melayani dan jadwal pengembalian.' : 'Tentukan peminjam, petugas yang melayani, serta jadwal pengembalian.' }}
+                {{ $isMahasiswa ? 'Identitas peminjam terkunci ke akun Anda. Pengajuan akan diverifikasi oleh Petugas Lab.' : 'Tentukan peminjam, petugas yang melayani, serta jadwal pengembalian.' }}
             </p>
         </div>
 
@@ -79,24 +84,34 @@
                 @endif
             </div>
 
-            <!-- Petugas Melayani -->
-            <div>
-                <label for="id_petugas" class="block text-sm font-semibold text-slate-700 mb-1.5">
-                    Petugas Melayani <span class="text-rose-500">*</span>
-                    @if (! $isMahasiswa && $defaultPetugasId)
-                        <span class="text-[11px] font-normal text-emerald-600">(otomatis terisi akun Anda)</span>
-                    @endif
-                </label>
-                <select id="id_petugas" name="id_petugas" required
-                        class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
-                    <option value="">-- Pilih Petugas --</option>
-                    @foreach ($petugasList as $pt)
-                        <option value="{{ $pt->id_petugas }}" @selected(old('id_petugas', $defaultPetugasId) == $pt->id_petugas)>
-                            {{ $pt->nama_petugas }} ({{ $pt->username }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <!-- Petugas Melayani (khusus Petugas; disembunyikan untuk Mahasiswa) -->
+            @if (! $isMahasiswa)
+                <div>
+                    <label for="id_petugas" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                        Petugas Melayani <span class="text-rose-500">*</span>
+                        @if ($defaultPetugasId)
+                            <span class="text-[11px] font-normal text-emerald-600">(otomatis terisi akun Anda)</span>
+                        @endif
+                    </label>
+                    <select id="id_petugas" name="id_petugas" required
+                            class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none">
+                        <option value="">-- Pilih Petugas --</option>
+                        @foreach ($petugasList as $pt)
+                            <option value="{{ $pt->id_petugas }}" @selected(old('id_petugas', $defaultPetugasId) == $pt->id_petugas)>
+                                {{ $pt->nama_petugas }} ({{ $pt->username }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @else
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Status Awal Pengajuan</label>
+                    <div class="w-full rounded-xl border border-yellow-200 bg-yellow-50/80 px-3.5 py-2.5 text-xs text-yellow-900 flex items-center justify-between gap-2">
+                        <span>Menunggu Verifikasi (ACC) Petugas Lab</span>
+                        @include('partials.status-badge', ['status' => 'Menunggu'])
+                    </div>
+                </div>
+            @endif
 
             <div>
                 <label for="tanggal_pinjam" class="block text-sm font-semibold text-slate-700 mb-1.5">Tanggal &amp; Jam Pinjam <span class="text-rose-500">*</span></label>
@@ -119,7 +134,9 @@
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <div>
                 <h2 class="text-base font-bold text-slate-900">2. Daftar Alat yang Dipinjam</h2>
-                <p class="text-xs text-slate-500">Stok alat akan berkurang otomatis melalui Trigger MySQL saat transaksi disimpan.</p>
+                <p class="text-xs text-slate-500">
+                    {{ $isMahasiswa ? 'Stok alat akan berkurang otomatis setelah pengajuan disetujui (ACC) oleh Petugas.' : 'Status transaksi langsung Dipinjam dan stok alat berkurang otomatis melalui Trigger MySQL.' }}
+                </p>
             </div>
             <button type="button" id="add-item-btn"
                     class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3.5 py-2 transition">
@@ -184,7 +201,7 @@
                 <a href="{{ route('peminjaman.index') }}" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition">Batal</a>
                 <button type="submit" @disabled($missingPrereq)
                         class="rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-indigo-500/20 transition">
-                    Simpan Transaksi Peminjaman
+                    {{ $isMahasiswa ? 'Kirim Pengajuan Peminjaman' : 'Simpan Transaksi Peminjaman' }}
                 </button>
             </div>
         </div>
